@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Verify File — File Tampering Detector{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Verify File Integrity</h1>
+  <p class="page-subtitle">
+    Upload a file and select its registered reference record.
+    The system will compare SHA-256 hashes to determine if the file has been modified.
+  </p>
+</div>
+
+{% if verified %}
+<!-- ===== Verification Result ===== -->
+
+{% if result == 'UNCHANGED' %}
+<div class="result-card result-card--success">
+  <div class="result-icon">✔</div>
+  <h2 class="result-title">FILE UNCHANGED</h2>
+  <p class="result-desc">
+    The SHA-256 hash of the uploaded file <strong>matches</strong> the registered reference.
+    The file has not been modified since it was registered.
+  </p>
+</div>
+{% elif result == 'MODIFIED' %}
+<div class="result-card result-card--error">
+  <div class="result-icon">✘</div>
+  <h2 class="result-title">FILE MODIFIED</h2>
+  <p class="result-desc">
+    The SHA-256 hash of the uploaded file <strong>does not match</strong> the registered reference.
+    The file may have been altered, corrupted, or replaced since registration.
+  </p>
+</div>
+{% else %}
+<div class="result-card result-card--warning">
+  <div class="result-icon">?</div>
+  <h2 class="result-title">UNKNOWN FILE</h2>
+  <p class="result-desc">
+    No registered reference record was found for the selected ID.
+    The file cannot be verified without a trusted reference hash.
+  </p>
+</div>
+{% endif %}
+
+<!-- Detail Table -->
+<section class="card mt-lg">
+  <div class="card-header">
+    <h2 class="card-title">Verification Details</h2>
+  </div>
+  <div class="detail-grid">
+    <div class="detail-row">
+      <span class="detail-label">Filename Uploaded</span>
+      <span class="detail-value">{{ filename }}</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Record ID Used</span>
+      <span class="detail-value"><code>{{ record_id }}</code></span>
+    </div>
+    {% if reference %}
+    <div class="detail-row">
+      <span class="detail-label">Registered Filename</span>
+      <span class="detail-value">{{ reference.filename }}</span>
+    </div>
+    {% endif %}
+    <div class="detail-row">
+      <span class="detail-label">Uploaded File Size</span>
+      <span class="detail-value">{{ file_size | filesizeformat }}</span>
+    </div>
+    {% if ref_size and ref_size != file_size %}
+    <div class="detail-row detail-row--warn">
+      <span class="detail-label">Registered File Size</span>
+      <span class="detail-value">
+        {{ ref_size | filesizeformat }}
+        <span class="badge badge--modified">SIZE DIFFERS</span>
+      </span>
+    </div>
+    {% elif ref_size %}
+    <div class="detail-row">
+      <span class="detail-label">Registered File Size</span>
+      <span class="detail-value">{{ ref_size | filesizeformat }}</span>
+    </div>
+    {% endif %}
+    <div class="detail-row">
+      <span class="detail-label">Reference Hash</span>
+      <span class="detail-value">
+        <textarea class="hash-display" readonly rows="2">{{ original_hash or '(No reference — unknown file)' }}</textarea>
+      </span>
+    </div>
+    <div class="detail-row {% if result == 'MODIFIED' %}detail-row--warn{% endif %}">
+      <span class="detail-label">Current Hash</span>
+      <span class="detail-value">
+        <textarea class="hash-display {% if result == 'MODIFIED' %}hash-display--mismatch{% endif %}" readonly rows="2">{{ current_hash }}</textarea>
+      </span>
+    </div>
+  </div>
+</section>
+
+{% if result == 'MODIFIED' %}
+<div class="warning-box mt-lg">
+  <strong>⚠ Warning:</strong>
+  The file contents appear to have changed since registration.
+  This could indicate accidental modification, file corruption, or deliberate tampering.
+  The reference hash in the database has <strong>not</strong> been changed.
+  If the modification was intentional, re-register the file to create a new reference.
+</div>
+{% endif %}
+
+<div class="action-bar mt-lg">
+  <a href="{{ url_for('verify') }}" class="btn btn-primary">Verify Another File</a>
+  <a href="{{ url_for('history') }}" class="btn btn-outline">View History</a>
+  <a href="{{ url_for('index') }}" class="btn btn-outline">Dashboard</a>
+</div>
+
+{% else %}
+<!-- ===== Upload & Select Form ===== -->
+<section class="card">
+  <div class="card-header">
+    <h2 class="card-title">Upload File for Verification</h2>
+  </div>
+  <form method="POST" enctype="multipart/form-data" id="verifyForm" class="upload-form">
+
+    <div class="drop-zone" id="dropZone">
+      <div class="drop-zone-inner">
+        <div class="drop-icon">🔍</div>
+        <p class="drop-label">Drag &amp; drop a file here, or click to browse</p>
+        <p class="drop-hint">Max 50 MiB</p>
+        <input type="file" name="file" id="fileInput" class="file-input" required />
+        <label for="fileInput" class="btn btn-secondary mt-sm">Choose File</label>
+      </div>
+    </div>
+
+    <div class="file-preview" id="filePreview" style="display:none;">
+      <div class="file-preview-info">
+        <span class="file-preview-name" id="previewName">—</span>
+        <span class="file-preview-size muted" id="previewSize">—</span>
+      </div>
+    </div>
+
+    <div class="form-group mt-lg">
+      <label for="record_id" class="form-label">Select Registered Reference Record</label>
+      {% if registered_files %}
+        <select name="record_id" id="record_id" class="form-select" required>
+          <option value="">— Choose a registered record —</option>
+          {% for f in registered_files %}
+            <option value="{{ f.id }}">
+              [ID: {{ f.id }}] {{ f.filename }} — registered {{ f.registered_at }} UTC
+            </option>
+          {% endfor %}
+        </select>
+        <p class="form-hint">
+          A filename match alone does not prove integrity.
+          Select the exact record ID that was generated when you registered the file.
+        </p>
+      {% else %}
+        <div class="empty-state">
+          <p>No registered files found.</p>
+          <a href="{{ url_for('register') }}" class="btn btn-primary mt-sm">Register a File First</a>
+        </div>
+      {% endif %}
+    </div>
+
+    {% if registered_files %}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary btn-lg">Verify File Integrity</button>
+    </div>
+    {% endif %}
+  </form>
+</section>
+{% endif %}
+{% endblock %}

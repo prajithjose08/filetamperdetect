@@ -1,0 +1,248 @@
+================================================================================
+  FILE TAMPERING DETECTOR — PROJECT OVERVIEW & REQUIREMENTS SUMMARY
+================================================================================
+
+Project Name   : File Tampering Detector with Verification History
+Version        : 1.0
+Type           : Cybersecurity Mini-Project (Educational)
+Platform       : Local / Offline (no cloud, no paid APIs)
+Operating Sys  : Windows 10/11
+Language       : Python 3.10+
+IDE            : Visual Studio Code
+
+
+--------------------------------------------------------------------------------
+  PROJECT OBJECTIVE
+--------------------------------------------------------------------------------
+
+Detect whether a file has been modified by comparing its SHA-256 cryptographic
+hash against a previously saved reference hash stored in a local SQLite database.
+
+This tool helps verify the integrity of documents, images, source code files,
+and any other common file types. It is intended as an educational cybersecurity
+project demonstrating how hash-based integrity checks work in practice.
+
+
+--------------------------------------------------------------------------------
+  TECHNOLOGY STACK
+--------------------------------------------------------------------------------
+
+  BACKEND
+  -------
+  Language        : Python 3.10+
+  Web Framework   : Flask 3.x          (pip install flask)
+  WSGI Server     : Werkzeug 3.x       (installed automatically with Flask)
+  Hashing         : hashlib            (Python built-in — no install needed)
+  Database        : sqlite3            (Python built-in — no install needed)
+  File Handling   : tempfile, os       (Python built-in — no install needed)
+  CSV Export      : csv                (Python built-in — no install needed)
+  Security        : secrets            (Python built-in — no install needed)
+
+  FRONTEND
+  --------
+  Markup          : HTML5
+  Styling         : CSS3 (custom dark cybersecurity theme, no external framework)
+  Scripting       : Vanilla JavaScript (no jQuery, no React, no npm)
+
+  TESTING
+  -------
+  Test Framework  : pytest 9.x         (pip install pytest)
+  Test Client     : Flask built-in test client (no extra install)
+
+  STORAGE
+  -------
+  Database File   : SQLite             (instance/file_integrity.db)
+                    Created automatically on first run.
+                    No database server required.
+
+
+--------------------------------------------------------------------------------
+  PYTHON DEPENDENCIES  (see requirements.txt)
+--------------------------------------------------------------------------------
+
+  flask>=3.0.0
+    - Web framework used to build all routes and render HTML templates.
+    - Source: https://pypi.org/project/flask/
+    - License: BSD-3-Clause
+
+  werkzeug>=3.0.0
+    - WSGI utilities used by Flask; provides secure_filename() for safe
+      handling of uploaded file names.
+    - Installed automatically as a Flask dependency.
+    - Source: https://pypi.org/project/werkzeug/
+    - License: BSD-3-Clause
+
+  pytest (development only — not required to run the app)
+    - Used to execute the automated unit and integration tests.
+    - Source: https://pypi.org/project/pytest/
+    - License: MIT
+
+  All other imports (hashlib, sqlite3, csv, os, tempfile, secrets, io,
+  datetime) are part of the Python Standard Library and require no installation.
+
+
+--------------------------------------------------------------------------------
+  DATA SOURCES & DATA STORAGE
+--------------------------------------------------------------------------------
+
+  WHERE DATA COMES FROM
+  ---------------------
+  - All data originates from files uploaded by the user through the browser.
+  - No external datasets, APIs, or cloud services are used.
+  - No data is downloaded from the internet at runtime.
+
+  WHAT IS STORED
+  --------------
+  The SQLite database (instance/file_integrity.db) stores two tables:
+
+  1. registered_files
+     - id             : Auto-generated unique integer record ID
+     - filename       : Original filename (sanitised with secure_filename)
+     - file_size      : Size of the file in bytes at registration time
+     - sha256_hash    : 64-character SHA-256 hex digest of the file content
+     - registered_at  : UTC timestamp of registration
+
+  2. verification_history
+     - id             : Auto-generated unique integer history ID
+     - registered_id  : Foreign key linking to the reference record (nullable
+                        for UNKNOWN results where no reference exists)
+     - filename       : Filename of the file that was verified
+     - original_hash  : Reference SHA-256 hash at the time of verification
+     - current_hash   : SHA-256 hash of the uploaded file being checked
+     - file_size      : Size in bytes of the uploaded file
+     - result         : One of UNCHANGED, MODIFIED, or UNKNOWN
+     - verified_at    : UTC timestamp of the verification event
+
+  WHAT IS NOT STORED
+  ------------------
+  - Uploaded files are NEVER stored permanently on disk.
+  - Each uploaded file is written to a secure OS temporary file, hashed,
+    and then immediately deleted. Only the hash and metadata are kept.
+  - No user accounts, passwords, or personal data are stored.
+  - No cookies or sessions contain sensitive information.
+
+  DATABASE LOCATION
+  -----------------
+  FileTamperingDetector/
+  └── instance/
+      └── file_integrity.db   ← created automatically on first run
+
+
+--------------------------------------------------------------------------------
+  CRYPTOGRAPHIC ALGORITHM
+--------------------------------------------------------------------------------
+
+  Algorithm   : SHA-256 (Secure Hash Algorithm, 256-bit)
+  Source      : Python built-in hashlib module (uses OpenSSL internally)
+  Output      : 64-character lowercase hexadecimal string
+  Properties  :
+    - One-way (cannot reverse a hash back to the original file)
+    - Deterministic (same file always produces the same hash)
+    - Avalanche effect (a single byte change produces a completely different hash)
+    - Fixed output length (always 64 hex characters regardless of file size)
+
+  Files are read in 1 MiB chunks to support large files without loading the
+  entire file into memory.
+
+
+--------------------------------------------------------------------------------
+  PROJECT FILE STRUCTURE
+--------------------------------------------------------------------------------
+
+  FileTamperingDetector/
+  ├── app.py                    Main Flask application and all route handlers
+  ├── hash_utils.py             SHA-256 hashing utility functions
+  ├── database.py               All SQLite database access (parameterised queries)
+  ├── requirements.txt          Python package dependencies
+  ├── PROJECT_OVERVIEW.txt      This file
+  ├── README.md                 Quick-start guide and demo instructions
+  │
+  ├── templates/
+  │   ├── base.html             Shared HTML layout (sidebar, navigation, flash msgs)
+  │   ├── index.html            Dashboard (stats, recent activity, how-it-works)
+  │   ├── register.html         File registration form and result page
+  │   ├── verify.html           File verification form and result page
+  │   ├── history.html          Verification history table with filters
+  │   ├── security_info.html    Educational page: SHA-256, hashing vs encryption
+  │   ├── 404.html              Page not found error
+  │   └── 500.html              Internal server error page
+  │
+  ├── static/
+  │   ├── css/style.css         All styles (dark cybersecurity theme, responsive)
+  │   └── js/script.js          Drag-and-drop, copy hash, flash auto-dismiss
+  │
+  ├── instance/
+  │   └── file_integrity.db     SQLite database (auto-created on first run)
+  │
+  └── tests/
+      ├── test_hash_utils.py    27 unit tests for hashing functions
+      └── test_integration.py   25 end-to-end tests via Flask test client
+
+
+--------------------------------------------------------------------------------
+  FEATURES IMPLEMENTED
+--------------------------------------------------------------------------------
+
+  [x] Dashboard with live stats (registered files, total checks, modified count)
+  [x] Recent verification activity on the dashboard
+  [x] File registration — drag-and-drop upload, SHA-256 hash, SQLite storage
+  [x] File integrity verification — UNCHANGED / MODIFIED / UNKNOWN results
+  [x] Side-by-side hash comparison on the verify result page
+  [x] File size difference warning when sizes differ
+  [x] Verification history page with UNCHANGED / MODIFIED / UNKNOWN filters
+  [x] CSV export of verification history (with filter support)
+  [x] Security information page (SHA-256 explained, hashing vs encryption)
+  [x] Dark cybersecurity-themed responsive UI
+  [x] Confirmation dialogs before destructive actions
+  [x] Flash messages (success, error, warning) with auto-dismiss
+  [x] Uploaded files are deleted immediately after hashing
+  [x] Reference hash is NEVER overwritten by a verification check
+  [x] Parameterised SQL queries (prevents SQL injection)
+  [x] File type validation and 50 MiB upload size limit
+  [x] Custom Jinja2 filesizeformat filter
+  [x] JSON API endpoint for registered files (/api/registered)
+  [x] 52 automated tests — all passing
+
+
+--------------------------------------------------------------------------------
+  KNOWN LIMITATIONS
+--------------------------------------------------------------------------------
+
+  1. The SQLite database is stored as a plain file. Anyone with filesystem
+     write access can modify the stored hashes, defeating the integrity check.
+     This project does NOT provide a digitally signed or tamper-proof audit trail.
+
+  2. SHA-256 detects whether a file changed but cannot identify which specific
+     bytes or lines differ, or who made the change.
+
+  3. File-type validation is extension-based (not deep content inspection).
+     This is acceptable for a local educational tool.
+
+  4. The application uses Flask's built-in development server. For any real
+     deployment, a production WSGI server (e.g. gunicorn, waitress) should be
+     used instead.
+
+  5. This application is designed for local, single-user educational use.
+     It does not implement user authentication or multi-user access controls.
+
+
+--------------------------------------------------------------------------------
+  HOW TO RUN
+--------------------------------------------------------------------------------
+
+  Prerequisites : Python 3.10 or later installed on Windows
+
+  Commands (run inside the FileTamperingDetector folder):
+
+    python -m venv venv
+    .\venv\Scripts\Activate.ps1
+    pip install -r requirements.txt
+    python -m pytest tests/ -v
+    python app.py
+
+  Then open:  http://127.0.0.1:5000
+
+
+================================================================================
+  End of Project Overview
+================================================================================

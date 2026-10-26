@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}File Tampering Detector{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+  <!-- ===== Sidebar Navigation ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-icon">🛡</span>
+      <span class="brand-text">FTD</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="{{ url_for('index') }}"        class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">
+        <span class="nav-icon">⬛</span> Dashboard
+      </a>
+      <a href="{{ url_for('register') }}"     class="nav-link {% if request.endpoint == 'register' %}active{% endif %}">
+        <span class="nav-icon">📁</span> Register File
+      </a>
+      <a href="{{ url_for('verify') }}"       class="nav-link {% if request.endpoint == 'verify' %}active{% endif %}">
+        <span class="nav-icon">🔍</span> Verify File
+      </a>
+      <a href="{{ url_for('history') }}"      class="nav-link {% if request.endpoint == 'history' %}active{% endif %}">
+        <span class="nav-icon">📋</span> History
+      </a>
+      <a href="{{ url_for('security_info') }}" class="nav-link {% if request.endpoint == 'security_info' %}active{% endif %}">
+        <span class="nav-icon">ℹ</span> Security Info
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <small>Running locally · SHA-256</small>
+    </div>
+  </aside>
+
+  <!-- ===== Main Content ===== -->
+  <main class="main-content">
+    <!-- Mobile header -->
+    <header class="mobile-header">
+      <button class="hamburger" id="hamburger" aria-label="Toggle navigation">☰</button>
+      <span class="mobile-title">File Tampering Detector</span>
+    </header>
+
+    <div class="page-inner">
+      <!-- Flash messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-container">
+            {% for category, message in messages %}
+              <div class="flash flash-{{ category }}">
+                <span>{{ message }}</span>
+                <button class="flash-close" onclick="this.parentElement.remove()">✕</button>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

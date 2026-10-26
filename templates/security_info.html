@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Security Information — File Tampering Detector{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Security Information</h1>
+  <p class="page-subtitle">
+    Understanding file integrity, SHA-256, and the limitations of hash-based verification.
+  </p>
+</div>
+
+<section class="card info-article">
+
+  <h2 class="section-heading">What is File Integrity?</h2>
+  <p>
+    File integrity means that a file's contents have not been altered from a known-good state.
+    A file can be tampered with deliberately (by an attacker), accidentally (disk corruption,
+    failed transfer), or unintentionally (software auto-update changing a config file).
+    Detecting tampering early is fundamental to cybersecurity and data assurance.
+  </p>
+
+  <h2 class="section-heading">How SHA-256 Works</h2>
+  <p>
+    SHA-256 (Secure Hash Algorithm, 256-bit output) is a <em>one-way cryptographic hash function</em>.
+    It takes any input — a text file, a photo, a compiled program — and produces a fixed-length
+    64-character hexadecimal string called a <strong>digest</strong> or <strong>hash</strong>.
+  </p>
+  <div class="example-box">
+    <p><strong>Input:</strong> <code>Hello, World!</code></p>
+    <p><strong>SHA-256:</strong> <code>dffd6021bb2bd5b0af676290809ec3a5 3191dd81c7f70a4b28688a362182986d</code></p>
+    <hr class="divider-sm" />
+    <p><strong>Input:</strong> <code>Hello, World.</code> &nbsp;(period instead of exclamation mark)</p>
+    <p><strong>SHA-256:</strong> <code>f4d8b2c3a1ee5b0e6ff5b49e789e2f63 a09d48c32dda9bbf9c2e7b3c1e5fa40d</code></p>
+    <p class="muted-note">
+      One character change → completely different hash. This property is called the <em>avalanche effect</em>.
+    </p>
+  </div>
+  <p>
+    SHA-256 is a core building block in TLS/HTTPS, digital certificates, code signing,
+    and software distribution integrity checks (e.g., Linux ISO checksums).
+  </p>
+
+  <h2 class="section-heading">Why a Single Byte Change Matters</h2>
+  <p>
+    SHA-256 was designed so that even the tiniest change causes an entirely different output.
+    This makes it impossible to modify a file without the hash changing — and therefore
+    impossible for tampering to go undetected, <em>as long as the original hash is trusted</em>.
+  </p>
+
+  <h2 class="section-heading">Hashing vs Encryption</h2>
+  <table class="compare-table">
+    <thead>
+      <tr><th>Property</th><th>Hashing (SHA-256)</th><th>Encryption (AES, RSA…)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Direction</td><td>One-way — cannot reverse</td><td>Two-way — encrypt &amp; decrypt</td></tr>
+      <tr><td>Output size</td><td>Fixed (256 bits)</td><td>Variable (depends on key/algorithm)</td></tr>
+      <tr><td>Key required</td><td>No</td><td>Yes</td></tr>
+      <tr><td>Purpose</td><td>Integrity verification</td><td>Confidentiality</td></tr>
+      <tr><td>Recovers original?</td><td>No</td><td>Yes (with correct key)</td></tr>
+    </tbody>
+  </table>
+
+  <h2 class="section-heading">What Hash Comparison Can and Cannot Do</h2>
+  <ul class="info-list">
+    <li>
+      <strong>Can detect:</strong> Any change in file content, regardless of how small.
+    </li>
+    <li>
+      <strong>Cannot identify:</strong> Who made the change, when exactly, or which bytes differ.
+    </li>
+    <li>
+      <strong>Cannot prove:</strong> That the original file was authentic in the first place —
+      only that it matches the saved reference.
+    </li>
+    <li>
+      <strong>Cannot resist:</strong> An attacker who also has write access to the database —
+      they could update the stored hash to match the modified file.
+    </li>
+  </ul>
+
+  <h2 class="section-heading">Why the Reference Hash Must Be Protected</h2>
+  <p>
+    The integrity check is only as trustworthy as the stored reference hash.
+    If an attacker can modify the database, they can replace the reference hash with a new one,
+    making a tampered file appear clean. In production systems this is addressed by:
+  </p>
+  <ul class="info-list">
+    <li>Storing reference hashes in a write-once, append-only log.</li>
+    <li>Using <em>digital signatures</em> (e.g., RSA or ECDSA) so the hash is signed with a private key.</li>
+    <li>Publishing hashes to an immutable ledger or trusted third-party service.</li>
+    <li>Applying OS-level access controls to restrict who can write to the database file.</li>
+  </ul>
+
+  <h2 class="section-heading">Limitations of This Application</h2>
+  <div class="warning-box">
+    <ul class="info-list">
+      <li>
+        This application stores reference hashes in a local SQLite database file
+        (<code>instance/file_integrity.db</code>).
+        Anyone with write access to that file can alter the stored hashes.
+        This application does <strong>not</strong> provide a digitally signed or tamper-proof audit trail.
+      </li>
+      <li>
+        SHA-256 is a hash function, not a signature scheme. It proves the file matches its reference
+        but does not prove who registered the reference or when.
+      </li>
+      <li>
+        The application does not identify which specific bytes or lines changed —
+        only whether the overall hash differs.
+      </li>
+      <li>
+        File upload is restricted by extension, but extension checks can be bypassed.
+        This application is intended for local, educational use — not as a production security control.
+      </li>
+    </ul>
+  </div>
+
+</section>
+{% endblock %}

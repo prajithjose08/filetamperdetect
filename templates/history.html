@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Verification History — File Tampering Detector{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Verification History</h1>
+  <p class="page-subtitle">
+    Every integrity-check event is recorded here. The reference hash is never
+    overwritten by a verification — only the comparison result is stored.
+  </p>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+  <span class="filter-label">Filter by result:</span>
+  <a href="{{ url_for('history') }}"
+     class="btn btn-sm {% if active_filter == 'ALL' %}btn-primary{% else %}btn-outline{% endif %}">
+    All
+  </a>
+  <a href="{{ url_for('history', filter='UNCHANGED') }}"
+     class="btn btn-sm {% if active_filter == 'UNCHANGED' %}btn-success{% else %}btn-outline{% endif %}">
+    Unchanged
+  </a>
+  <a href="{{ url_for('history', filter='MODIFIED') }}"
+     class="btn btn-sm {% if active_filter == 'MODIFIED' %}btn-danger{% else %}btn-outline{% endif %}">
+    Modified
+  </a>
+  <a href="{{ url_for('history', filter='UNKNOWN') }}"
+     class="btn btn-sm {% if active_filter == 'UNKNOWN' %}btn-warning{% else %}btn-outline{% endif %}">
+    Unknown
+  </a>
+  <a href="{{ url_for('export_csv', filter=active_filter if active_filter != 'ALL' else '') }}"
+     class="btn btn-sm btn-outline ml-auto">
+    Export CSV
+  </a>
+</div>
+
+<!-- History Table -->
+<section class="card mt-sm">
+  {% if records %}
+    <div class="table-wrap">
+      <table class="data-table data-table--history">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Rec ID</th>
+            <th>Filename</th>
+            <th>Verified At (UTC)</th>
+            <th>Reference Hash</th>
+            <th>Current Hash</th>
+            <th>Size</th>
+            <th>Result</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in records %}
+          <tr class="{% if row.result == 'MODIFIED' %}row--modified{% elif row.result == 'UNCHANGED' %}row--unchanged{% else %}row--unknown{% endif %}">
+            <td class="muted">{{ row.id }}</td>
+            <td><code>{{ row.registered_id }}</code></td>
+            <td class="filename-cell">{{ row.filename }}</td>
+            <td class="muted nowrap">{{ row.verified_at }}</td>
+            <td>
+              <div class="hash-cell" title="{{ row.original_hash }}">
+                {{ row.original_hash[:16] }}…
+              </div>
+            </td>
+            <td>
+              <div class="hash-cell {% if row.result == 'MODIFIED' %}hash-cell--mismatch{% endif %}"
+                   title="{{ row.current_hash }}">
+                {{ row.current_hash[:16] }}…
+              </div>
+            </td>
+            <td class="muted">{{ row.file_size | filesizeformat }}</td>
+            <td>
+              <span class="badge badge--{{ row.result | lower }}">{{ row.result }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="table-footer">
+      Showing {{ records | length }} record(s)
+      {% if active_filter != 'ALL' %} filtered by <strong>{{ active_filter }}</strong>{% endif %}.
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <p>No verification records
+        {% if active_filter != 'ALL' %}with result <strong>{{ active_filter }}</strong>{% endif %}
+        found.
+      </p>
+      <a href="{{ url_for('verify') }}" class="btn btn-primary mt-sm">Verify a File</a>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

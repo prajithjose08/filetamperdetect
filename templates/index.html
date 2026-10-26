@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — File Tampering Detector{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Dashboard</h1>
+  <p class="page-subtitle">
+    Monitor file integrity and detect unauthorised modifications using SHA-256 cryptographic hashing.
+  </p>
+</div>
+
+<!-- Stat Cards -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-value">{{ stats.total_registered }}</div>
+    <div class="stat-label">Files Registered</div>
+    <div class="stat-hint">Trusted reference records</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ stats.total_checks }}</div>
+    <div class="stat-label">Integrity Checks</div>
+    <div class="stat-hint">Total verification events</div>
+  </div>
+  <div class="stat-card stat-card--warning">
+    <div class="stat-value">{{ stats.total_modified }}</div>
+    <div class="stat-label">Files Modified</div>
+    <div class="stat-hint">Hash mismatch detected</div>
+  </div>
+  <div class="stat-card stat-card--success">
+    <div class="stat-value">{{ stats.total_checks - stats.total_modified }}</div>
+    <div class="stat-label">Clean Checks</div>
+    <div class="stat-hint">Hashes matched</div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="action-bar">
+  <a href="{{ url_for('register') }}" class="btn btn-primary">Register a File</a>
+  <a href="{{ url_for('verify') }}"   class="btn btn-secondary">Verify Integrity</a>
+  <a href="{{ url_for('export_csv') }}" class="btn btn-outline">Export CSV</a>
+</div>
+
+<!-- Recent Activity -->
+<section class="card mt-lg">
+  <div class="card-header">
+    <h2 class="card-title">Recent Verification Activity</h2>
+    <a href="{{ url_for('history') }}" class="card-action">View all →</a>
+  </div>
+
+  {% if stats.recent %}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Filename</th>
+            <th>Record ID</th>
+            <th>Result</th>
+            <th>Verified At (UTC)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in stats.recent %}
+          <tr>
+            <td class="muted">{{ row.id }}</td>
+            <td>{{ row.filename }}</td>
+            <td><code>{{ row.registered_id }}</code></td>
+            <td>
+              <span class="badge badge--{{ row.result | lower }}">{{ row.result }}</span>
+            </td>
+            <td class="muted">{{ row.verified_at }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <p>No verification activity yet.</p>
+      <p>Register a file and run your first integrity check to see results here.</p>
+    </div>
+  {% endif %}
+</section>
+
+<!-- How it works -->
+<section class="card mt-lg">
+  <div class="card-header">
+    <h2 class="card-title">How It Works</h2>
+  </div>
+  <div class="steps-grid">
+    <div class="step">
+      <div class="step-number">1</div>
+      <div class="step-text">
+        <strong>Register</strong> — Upload a file to store its SHA-256 hash as a trusted reference.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-number">2</div>
+      <div class="step-text">
+        <strong>Verify</strong> — Upload the same file later and compare its current hash with the reference.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-number">3</div>
+      <div class="step-text">
+        <strong>Detect</strong> — Any change to the file, even a single byte, produces a different hash, revealing tampering.
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
